@@ -97,22 +97,37 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Column(
         children: <Widget>[
-          // Seek Bar
+          // Seek Bar section
           Expanded(
-            child: Center(
-                child: Container(
-              width: 125.0,
-              height: 125.0,
-              child: RadialSeekBar(
-                child: ClipOval(
-                  clipper: CircleClipper(),
-                  child: Image.network(
-                    demoPlaylist.songs[0].albumArtUrl,
-                    fit: BoxFit.cover,
+            child: new Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: Colors.cyan,
+              child: Center(
+                  child: Container(
+                width: 150.0,
+                height: 150.0,
+                color: Colors.transparent,
+                child: RadialProgressBar(
+                  trackColor: Colors.grey[400],
+                  progressColor: accentColor,
+                  thumbColor: darkAccentColor,
+                  progressPercent: 0.45,
+                  thumbPositionPercent: 0.45,
+                  innerPadding: EdgeInsets.all(0.0),
+                  outerPadding: EdgeInsets.all(0.0),
+                  thumbSize: 8.0,
+
+                  child: ClipOval(
+                    clipper: CircleClipper(),
+                    child: Image.network(
+                      demoPlaylist.songs[0].albumArtUrl,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
-              ),
-            )),
+              )),
+            ),
           ),
 
           // Visualizer
@@ -161,14 +176,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class SuperWidget extends StatefulWidget {
-  @override
-  State<StatefulWidget> createState() {
-    // TODO: implement createState
-  }
-}
-
-class RadialSeekBar extends StatefulWidget {
+class RadialProgressBar extends StatefulWidget {
   final double trackWidth;
   final Color trackColor;
   final double progressWidth;
@@ -176,39 +184,53 @@ class RadialSeekBar extends StatefulWidget {
   final double progressPercent;
   final double thumbSize;
   final Color thumbColor;
-  final double thumbPosition;
+  final double thumbPositionPercent;
+  final EdgeInsets outerPadding;
+  final EdgeInsets innerPadding;
+
   final Widget child;
 
-  RadialSeekBar(
-      {this.trackWidth = 6.0,
+  RadialProgressBar(
+      {this.trackWidth = 3.0,
       this.trackColor = Colors.grey,
-      this.progressWidth = 10.0,
+      this.progressWidth = 5.0,
       this.progressColor = Colors.blue,
-      this.progressPercent = 0.25,
-      this.thumbSize = 12.0,
+      this.progressPercent = 0.0,
+      this.thumbSize = 8.0,
       this.thumbColor = Colors.black,
-      this.thumbPosition = 0.0,
+      this.thumbPositionPercent = 0.0,
+      this.outerPadding = const EdgeInsets.all(0.0),
+      this.innerPadding = const EdgeInsets.all(0.0),
       this.child});
 
   @override
   RadialSeekBarState createState() => new RadialSeekBarState();
 }
 
-class RadialSeekBarState extends State<RadialSeekBar> {
+class RadialSeekBarState extends State<RadialProgressBar> {
+  EdgeInsets _insetsForPadding() {
+    final outerThickness =
+        max(widget.trackWidth, max(widget.progressWidth, widget.thumbSize)) / 2;
+    return EdgeInsets.all(outerThickness);
+  }
+
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
-    return new CustomPaint(
-      painter: RadialSeekBarPainter(
-          trackWidth: widget.trackWidth,
-          trackColor: widget.trackColor,
-          progressWidth: widget.progressWidth,
-          progressColor: widget.progressColor,
-          progressPercent: widget.progressPercent,
-          thumbColor: widget.thumbColor,
-          thumbSize: widget.thumbSize,
-          thumbPosition: widget.thumbPosition),
-      child: widget.child,
+    return Padding(
+      padding: widget.outerPadding,
+      child: CustomPaint(
+          foregroundPainter: RadialSeekBarPainter(
+              trackWidth: widget.trackWidth,
+              trackColor: widget.trackColor,
+              progressWidth: widget.progressWidth,
+              progressColor: widget.progressColor,
+              progressPercent: widget.progressPercent,
+              thumbColor: widget.thumbColor,
+              thumbSize: widget.thumbSize,
+              thumbPositionPercent: widget.thumbPositionPercent),
+          child: Padding(
+              padding: _insetsForPadding() + widget.innerPadding,
+              child: widget.child)),
     );
   }
 }
@@ -220,7 +242,7 @@ class RadialSeekBarPainter extends CustomPainter {
   final double progressPercent;
   final Paint progressPaint;
   final double thumbSize;
-  final double thumbPosition;
+  final double thumbPositionPercent;
   final Paint thumbPaint;
 
   RadialSeekBarPainter(
@@ -231,7 +253,7 @@ class RadialSeekBarPainter extends CustomPainter {
       @required this.progressPercent,
       @required this.thumbSize,
       @required thumbColor,
-      @required this.thumbPosition})
+      @required this.thumbPositionPercent})
       : trackPaint = new Paint()
           ..color = trackColor
           ..style = PaintingStyle.stroke
@@ -247,8 +269,9 @@ class RadialSeekBarPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final outerThickness = max(trackWidth, max(progressWidth, thumbSize));
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = min(size.width, size.height) / 2;
+    final radius = min(size.width, size.height) / 2 + outerThickness / 2;
 
     //painting the track
     canvas.drawCircle(center, radius, trackPaint);
@@ -256,13 +279,13 @@ class RadialSeekBarPainter extends CustomPainter {
     //painting the  progress
     final progressAngle = 2 * pi * progressPercent;
     final Rect rect = new Rect.fromCircle(center: center, radius: radius);
-    final double startAngle = - pi / 2;
+    final double startAngle = -pi / 2;
     canvas.drawArc(rect, startAngle, progressAngle, false, progressPaint);
 
     // paint the thumb circle
-    final Offset thumbCenter = center +
-        Offset(cos(progressAngle + startAngle) * radius,
-            sin(progressAngle + startAngle) * radius);
+    final double thumbAngle = 2 * pi * thumbPositionPercent + startAngle;
+    final Offset thumbCenter =
+        center + Offset(cos(thumbAngle) * radius, sin(thumbAngle) * radius);
     final thumbRadius = thumbSize / 2;
     canvas.drawCircle(thumbCenter, thumbRadius, thumbPaint);
   }
