@@ -1,5 +1,5 @@
 name: fluttermusicplayer
-description: A new Flutter application.
+description: A Flutter music application with a radial progress bar and vizulization.
 
 dependencies:
   flutter:
@@ -8,6 +8,8 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^0.1.2
+  fluttery: 0.0.5
+  fluttery_audio: 0.0.3
 
 dev_dependencies:
   flutter_test:

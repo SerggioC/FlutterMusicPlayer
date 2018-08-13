@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:fluttermusicplayer/BottomControls.dart';
 import 'package:fluttermusicplayer/songs.dart';
 import 'package:fluttermusicplayer/theme.dart';
+import 'package:fluttery/gestures.dart';
+import 'package:fluttery_audio/fluttery_audio.dart';
 
 void main() => runApp(new MyApp());
 
@@ -50,129 +52,189 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  @override
+  void setState(VoidCallback fn) {}
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  double _seekPercent;
 
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
-    //
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
-    return new Scaffold(
-      appBar: new AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        backgroundColor: Colors.transparent,
-        elevation: 0.0,
-        leading: new IconButton(
-          icon: new Icon(
-            Icons.arrow_back_ios,
-          ),
-          color: const Color(0xFFDDDDDD),
-          onPressed: () {},
-        ),
-        title: new Text(widget.title),
-        actions: <Widget>[
-          new IconButton(
+
+    PlaybackState currentPlaybackState = PlaybackState.paused;
+
+    return Audio(
+      audioUrl: demoPlaylist.songs[0].audioUrl,
+      playbackState: currentPlaybackState,
+      child: new Scaffold(
+        appBar: new AppBar(
+          // Here we take the value from the MyHomePage object that was created by
+          // the App.build method, and use it to set our appbar title.
+          backgroundColor: Colors.transparent,
+          elevation: 0.0,
+          leading: new IconButton(
             icon: new Icon(
-              Icons.menu,
+              Icons.arrow_back_ios,
             ),
             color: const Color(0xFFDDDDDD),
             onPressed: () {},
           ),
-        ],
-      ),
-      body: Column(
-        children: <Widget>[
-          // Seek Bar section
-          Expanded(
-            child: new Container(
-              width: double.infinity,
-              height: double.infinity,
-              color: Colors.cyan,
-              child: Center(
-                  child: Container(
-                width: 150.0,
-                height: 150.0,
-                color: Colors.transparent,
-                child: RadialProgressBar(
-                  trackColor: Colors.grey[400],
-                  progressColor: accentColor,
-                  thumbColor: darkAccentColor,
-                  progressPercent: 0.45,
-                  thumbPositionPercent: 0.45,
-                  innerPadding: EdgeInsets.all(0.0),
-                  outerPadding: EdgeInsets.all(0.0),
-                  thumbSize: 8.0,
-
-                  child: ClipOval(
-                    clipper: CircleClipper(),
-                    child: Image.network(
-                      demoPlaylist.songs[0].albumArtUrl,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-              )),
+          title: new Text(widget.title),
+          actions: <Widget>[
+            new IconButton(
+              icon: new Icon(
+                Icons.menu,
+              ),
+              color: const Color(0xFFDDDDDD),
+              onPressed: () {},
             ),
-          ),
+          ],
+        ),
+        body: Column(
+          children: <Widget>[
 
-          // Visualizer
-          Container(
-            width: double.infinity,
-            height: 125.0,
-          ),
+            // SEEK BAR SECTION
+            new Expanded(
+              child: new AudioComponent(
+                updateMe: [
+                  WatchableAudioProperties.audioSeeking,
+                  WatchableAudioProperties.audioPlayhead,
+                ],
+                playerBuilder: (BuildContext context, AudioPlayer player, Widget child) {
+                  double playbackProgress = 0.0;
+                  if (player.audioLength != null && player.position != null) {
+                    playbackProgress = player.position.inMilliseconds / player.audioLength.inMilliseconds;
+                  }
+                  _seekPercent = player.isSeeking ? _seekPercent : null;
 
-          // Song Title, Artist name, Controls
-          new BottomControls()
-        ],
+                  return new RadialSeekBar(
+                    seekPercent: _seekPercent,
+                    progress: playbackProgress,
+                  );
+                },
+              ),
+            ),
+
+            // VISUALIZER SECTION
+            Container(
+              width: double.infinity,
+              height: 125.0,
+            ),
+
+            // Song Title, Artist name, Controls SECTION
+            new BottomControls()
+          ],
+        ),
       ),
     );
   }
+}
 
-  Center buildCenter(BuildContext context) {
-    return new Center(
-      // Center is a layout widget. It takes a single child and positions it
-      // in the middle of the parent.
-      child: new Column(
-        // Column is also layout widget. It takes a list of children and
-        // arranges them vertically. By default, it sizes itself to fit its
-        // children horizontally, and tries to be as tall as its parent.
-        //
-        // Invoke "debug paint" (press "p" in the console where you ran
-        // "flutter run", or select "Toggle Debug Paint" from the Flutter tool
-        // window in IntelliJ) to see the wireframe for each widget.
-        //
-        // Column has various properties to control how it sizes itself and
-        // how it positions its children. Here we use mainAxisAlignment to
-        // center the children vertically; the main axis here is the vertical
-        // axis because Columns are vertical (the cross axis would be
-        // horizontal).
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          new Text(
-            'You have pushed the button this many times:',
-          ),
-          new Text(
-            '$_counter',
-            style: Theme.of(context).textTheme.display1,
-          ),
-        ],
-      ),
-    );
+class RadialSeekBar extends StatefulWidget {
+  final double progress;
+  final double seekPercent;
+  final Function(double) onSeekRequested;
+  final Widget child;
+
+  RadialSeekBar({
+    this.progress = 0.0,
+    this.seekPercent = 0.0,
+    this.onSeekRequested,
+    this.child,});
+
+  @override
+  RadialSeekBarState createState() {
+    return new RadialSeekBarState();
+  }
+}
+
+class RadialSeekBarState extends State<RadialSeekBar> {
+  double _progress = 0.0;
+  PolarCoord _startDragCoord;
+  double _startDragPercent;
+  double _currentDragPercent;
+
+  @override
+  void initState() {
+    super.initState();
+    _progress = widget.progress;
+  }
+
+  @override
+  void didUpdateWidget(RadialSeekBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _progress = oldWidget.progress;
+  }
+
+  void _onDragStart(PolarCoord startCoord) {
+    _startDragCoord = startCoord;
+    _startDragPercent = _progress;
+  }
+
+  void _onDragUpdate(PolarCoord dragCoord) {
+    final dragAngle = dragCoord.angle - _startDragCoord.angle;
+    final dragPercent = dragAngle / (2 * pi);
+    setState(() => _currentDragPercent = (_startDragPercent + dragPercent) % 1.0);
+  }
+
+  void _onDragEnd() {
+    if (widget.onSeekRequested != null ){
+      widget.onSeekRequested(_currentDragPercent);
+    }
+
+    setState(() {
+      _currentDragPercent = null;
+      _startDragCoord = null;
+      _startDragPercent = 0.0;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    double thumbPosition = _progress;
+    if(_currentDragPercent != null) {
+      thumbPosition = _currentDragPercent;
+    } else if(widget.seekPercent != null) {
+      thumbPosition = widget.seekPercent;
+    }
+
+
+    return new RadialDragGestureDetector(
+        onRadialDragStart: _onDragStart,
+        onRadialDragUpdate: _onDragUpdate,
+        onRadialDragEnd: _onDragEnd,
+        child: new Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: Colors.transparent, // needed
+          child: Center(
+              child: Container(
+            width: 150.0,
+            height: 150.0,
+            color: Colors.transparent,
+            child: RadialProgressBar(
+              trackColor: Colors.grey[400],
+              progressColor: accentColor,
+              thumbColor: darkAccentColor,
+              progressPercent: _currentDragPercent ?? _progress,
+              thumbPositionPercent: thumbPosition,
+              innerPadding: EdgeInsets.all(0.0),
+              outerPadding: EdgeInsets.all(0.0),
+              thumbSize: 8.0,
+              child: ClipOval(
+                clipper: CircleClipper(),
+                child: Image.network(
+                  demoPlaylist.songs[0].albumArtUrl,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          )),
+        ));
   }
 }
 
@@ -204,13 +266,14 @@ class RadialProgressBar extends StatefulWidget {
       this.child});
 
   @override
-  RadialSeekBarState createState() => new RadialSeekBarState();
+  RadialProgressBarState createState() {
+    return new RadialProgressBarState();
+  }
 }
 
-class RadialSeekBarState extends State<RadialProgressBar> {
+class RadialProgressBarState extends State<RadialProgressBar> {
   EdgeInsets _insetsForPadding() {
-    final outerThickness =
-        max(widget.trackWidth, max(widget.progressWidth, widget.thumbSize)) / 2;
+    final outerThickness = max(widget.trackWidth, max(widget.progressWidth, widget.thumbSize)) / 2;
     return EdgeInsets.all(outerThickness);
   }
 
@@ -228,9 +291,7 @@ class RadialSeekBarState extends State<RadialProgressBar> {
               thumbColor: widget.thumbColor,
               thumbSize: widget.thumbSize,
               thumbPositionPercent: widget.thumbPositionPercent),
-          child: Padding(
-              padding: _insetsForPadding() + widget.innerPadding,
-              child: widget.child)),
+          child: Padding(padding: _insetsForPadding() + widget.innerPadding, child: widget.child)),
     );
   }
 }
@@ -284,8 +345,7 @@ class RadialSeekBarPainter extends CustomPainter {
 
     // paint the thumb circle
     final double thumbAngle = 2 * pi * thumbPositionPercent + startAngle;
-    final Offset thumbCenter =
-        center + Offset(cos(thumbAngle) * radius, sin(thumbAngle) * radius);
+    final Offset thumbCenter = center + Offset(cos(thumbAngle) * radius, sin(thumbAngle) * radius);
     final thumbRadius = thumbSize / 2;
     canvas.drawCircle(thumbCenter, thumbRadius, thumbPaint);
   }
@@ -293,72 +353,6 @@ class RadialSeekBarPainter extends CustomPainter {
   @override
   bool shouldRepaint(CustomPainter oldDelegate) {
     return true;
-  }
-}
-
-class PlayPauseButton extends StatelessWidget {
-  const PlayPauseButton({
-    Key key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return RawMaterialButton(
-        shape: CircleBorder(),
-        fillColor: Colors.white,
-        splashColor: lightAccentColor,
-        elevation: 10.0,
-        highlightElevation: 5.0,
-        highlightColor: lightAccentColor.withOpacity(0.5),
-        child: Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Icon(
-            Icons.play_arrow,
-            color: darkAccentColor,
-            size: 35.0,
-          ),
-        ),
-        onPressed: () {
-          //TODO action on press
-        });
-  }
-}
-
-class PreviousButton extends StatelessWidget {
-  const PreviousButton({
-    Key key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-        splashColor: lightAccentColor,
-        highlightColor: Colors.transparent,
-        icon: Icon(
-          Icons.skip_previous,
-          color: Colors.white,
-          size: 35.0,
-        ),
-        onPressed: () {
-          // TODO
-        });
-  }
-}
-
-class NextButton extends StatelessWidget {
-  const NextButton({
-    Key key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-        icon: Icon(
-          Icons.skip_next,
-          color: Colors.white,
-          size: 35.0,
-        ),
-        onPressed: () {});
   }
 }
 

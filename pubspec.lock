@@ -81,6 +81,20 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  fluttery:
+    dependency: "direct main"
+    description:
+      name: fluttery
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.0.5"
+  fluttery_audio:
+    dependency: "direct main"
+    description:
+      name: fluttery_audio
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.0.3"
   front_end:
     dependency: transitive
     description:
@@ -382,3 +396,4 @@ packages:
     version: "2.1.15"
 sdks:
   dart: ">=2.0.0-dev.62.0 <=2.0.0-dev.69.5.flutter-eab492385c"
+  flutter: ">=0.1.4 <2.0.0"
