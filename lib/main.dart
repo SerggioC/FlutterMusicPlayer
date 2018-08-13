@@ -55,8 +55,6 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void setState(VoidCallback fn) {}
 
-  double _seekPercent;
-
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -67,8 +65,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
     PlaybackState currentPlaybackState = PlaybackState.paused;
 
-    return Audio(
-      audioUrl: demoPlaylist.songs[0].audioUrl,
+    return AudioPlaylist(
+      playlist: demoPlaylist.songs.map((DemoSong song) {
+        return song.audioUrl;
+      }).toList(growable: false),
       playbackState: currentPlaybackState,
       child: new Scaffold(
         appBar: new AppBar(
@@ -96,24 +96,13 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
         body: Column(
           children: <Widget>[
-
             // SEEK BAR SECTION
             new Expanded(
-              child: new AudioComponent(
-                updateMe: [
-                  WatchableAudioProperties.audioSeeking,
-                  WatchableAudioProperties.audioPlayhead,
-                ],
-                playerBuilder: (BuildContext context, AudioPlayer player, Widget child) {
-                  double playbackProgress = 0.0;
-                  if (player.audioLength != null && player.position != null) {
-                    playbackProgress = player.position.inMilliseconds / player.audioLength.inMilliseconds;
-                  }
-                  _seekPercent = player.isSeeking ? _seekPercent : null;
-
-                  return new RadialSeekBar(
-                    seekPercent: _seekPercent,
-                    progress: playbackProgress,
+              child: AudioPlaylistComponent(
+                playlistBuilder: (BuildContext context, Playlist playlist, Widget child) {
+                  String _albumArtUri = demoPlaylist.songs[playlist.activeIndex].albumArtUrl;
+                  return AudioRadialSeekBar(
+                    albumArtUri: _albumArtUri,
                   );
                 },
               ),
@@ -126,10 +115,71 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
 
             // Song Title, Artist name, Controls SECTION
-            new BottomControls()
+            AudioPlaylistComponent(
+              playlistBuilder: (BuildContext context, Playlist playlist, Widget child) {
+                String songName = demoPlaylist.songs[playlist.activeIndex].songTitle;
+                String artistName = demoPlaylist.songs[playlist.activeIndex].artist;
+                int listSize = demoPlaylist.songs.length;
+                return BottomControls(
+                  songName: songName,
+                  artistName: artistName,
+                  listSize: listSize,
+                );
+              },
+            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class AudioRadialSeekBar extends StatefulWidget {
+  final String albumArtUri;
+
+  AudioRadialSeekBar({this.albumArtUri});
+
+  @override
+  AudioRadialSeekBarState createState() {
+    return new AudioRadialSeekBarState();
+  }
+}
+
+class AudioRadialSeekBarState extends State<AudioRadialSeekBar> {
+  double _seekPercent;
+
+  @override
+  Widget build(BuildContext context) {
+    return new AudioComponent(
+      updateMe: [
+        WatchableAudioProperties.audioSeeking,
+        WatchableAudioProperties.audioPlayhead,
+      ],
+      playerBuilder: (BuildContext context, AudioPlayer player, Widget child) {
+        double playbackProgress = 0.0;
+        if (player.audioLength != null && player.position != null) {
+          playbackProgress = player.position.inMilliseconds / player.audioLength.inMilliseconds;
+        }
+        _seekPercent = player.isSeeking ? _seekPercent : null;
+
+        return new RadialSeekBar(
+          progress: playbackProgress,
+          seekPercent: _seekPercent,
+          onSeekRequested: (double seekPercent) {
+            setState(() => _seekPercent = seekPercent);
+
+            final seekMillis = (player.audioLength.inMilliseconds * seekPercent).round();
+            player.seek(Duration(milliseconds: seekMillis));
+          },
+          child: Container(
+            color: accentColor,
+            child: Image.network(
+              widget.albumArtUri,
+              fit: BoxFit.cover,
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -144,7 +194,8 @@ class RadialSeekBar extends StatefulWidget {
     this.progress = 0.0,
     this.seekPercent = 0.0,
     this.onSeekRequested,
-    this.child,});
+    this.child,
+  });
 
   @override
   RadialSeekBarState createState() {
@@ -182,7 +233,7 @@ class RadialSeekBarState extends State<RadialSeekBar> {
   }
 
   void _onDragEnd() {
-    if (widget.onSeekRequested != null ){
+    if (widget.onSeekRequested != null) {
       widget.onSeekRequested(_currentDragPercent);
     }
 
@@ -196,12 +247,11 @@ class RadialSeekBarState extends State<RadialSeekBar> {
   @override
   Widget build(BuildContext context) {
     double thumbPosition = _progress;
-    if(_currentDragPercent != null) {
+    if (_currentDragPercent != null) {
       thumbPosition = _currentDragPercent;
-    } else if(widget.seekPercent != null) {
+    } else if (widget.seekPercent != null) {
       thumbPosition = widget.seekPercent;
     }
-
 
     return new RadialDragGestureDetector(
         onRadialDragStart: _onDragStart,
@@ -220,17 +270,14 @@ class RadialSeekBarState extends State<RadialSeekBar> {
               trackColor: Colors.grey[400],
               progressColor: accentColor,
               thumbColor: darkAccentColor,
-              progressPercent: _currentDragPercent ?? _progress,
+              progressPercent: _progress,
               thumbPositionPercent: thumbPosition,
               innerPadding: EdgeInsets.all(0.0),
               outerPadding: EdgeInsets.all(0.0),
               thumbSize: 8.0,
               child: ClipOval(
                 clipper: CircleClipper(),
-                child: Image.network(
-                  demoPlaylist.songs[0].albumArtUrl,
-                  fit: BoxFit.cover,
-                ),
+                child: widget.child,
               ),
             ),
           )),

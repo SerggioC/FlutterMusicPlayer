@@ -7,7 +7,14 @@ import 'package:fluttery_audio/src/_audio_player_widgets.dart';
 class BottomControls extends StatelessWidget {
   const BottomControls({
     Key key,
+    this.songName,
+    this.artistName,
+    this.listSize,
   }) : super(key: key);
+
+  final String songName;
+  final String artistName;
+  final int listSize;
 
   @override
   Widget build(BuildContext context) {
@@ -21,9 +28,10 @@ class BottomControls extends StatelessWidget {
           child: Column(
             children: <Widget>[
               RichText(
+                textAlign: TextAlign.center,
                 text: TextSpan(text: '', children: [
                   TextSpan(
-                    text: 'Song Title\n',
+                    text: '$songName\n',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 14.0,
@@ -34,7 +42,7 @@ class BottomControls extends StatelessWidget {
                     ),
                   ),
                   TextSpan(
-                    text: 'Artist Name',
+                    text: artistName,
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.75),
                       fontSize: 12.0,
@@ -53,17 +61,21 @@ class BottomControls extends StatelessWidget {
                     Expanded(child: Container()),
 
                     //Previous Button
-                    new PreviousButton(),
+                    PreviousButton(
+                      listSize: listSize,
+                    ),
 
                     Expanded(child: Container()),
 
                     //Play Pause Button
-                    new PlayPauseButton(),
+                    PlayPauseButton(),
 
                     Expanded(child: Container()),
 
                     // Next Button
-                    new NextButton(),
+                    NextButton(
+                      listSize: listSize,
+                    ),
 
                     Expanded(child: Container()),
                   ],
@@ -90,7 +102,7 @@ class PlayPauseButton extends StatelessWidget {
       ],
       playerBuilder: (BuildContext context, AudioPlayer player, Widget child) {
         IconData icon = Icons.music_note;
-        Color buttonColor = lightAccentColor;
+        Color buttonColor = darkAccentColor;
         Function onPressed;
 
         if (player.state == AudioPlayerState.playing) {
@@ -104,6 +116,8 @@ class PlayPauseButton extends StatelessWidget {
           icon = Icons.play_arrow;
           buttonColor = Colors.white;
           onPressed = player.play;
+        } else if (player.state == AudioPlayerState.loading) {
+          icon = Icons.music_note;
         }
 
         return new RawMaterialButton(
@@ -130,37 +144,57 @@ class PlayPauseButton extends StatelessWidget {
 class PreviousButton extends StatelessWidget {
   const PreviousButton({
     Key key,
+    this.listSize,
   }) : super(key: key);
+
+  final int listSize;
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-        splashColor: lightAccentColor,
-        highlightColor: Colors.transparent,
-        icon: Icon(
-          Icons.skip_previous,
-          color: Colors.white,
-          size: 35.0,
-        ),
-        onPressed: () {
-          // TODO
-        });
+    return AudioPlaylistComponent(
+      playlistBuilder: (BuildContext context, Playlist playlist, Widget child) {
+        return IconButton(
+            splashColor: lightAccentColor,
+            highlightColor: Colors.transparent,
+            icon: Icon(
+              Icons.skip_previous,
+              color: playlist.activeIndex > 0 ? Colors.white : Colors.grey,
+              size: 35.0,
+            ),
+            onPressed: () {
+              if (playlist.activeIndex >= 0) {
+                playlist.previous();
+              }
+            });
+      },
+    );
   }
 }
 
 class NextButton extends StatelessWidget {
   const NextButton({
-    Key key,
+    Key key, this.listSize,
   }) : super(key: key);
+
+  final int listSize;
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-        icon: Icon(
-          Icons.skip_next,
-          color: Colors.white,
-          size: 35.0,
-        ),
-        onPressed: () {});
+    return AudioPlaylistComponent(
+        playlistBuilder: (BuildContext context, Playlist playlist, Widget child) {
+      return IconButton(
+          splashColor: lightAccentColor,
+          highlightColor: Colors.transparent,
+          icon: Icon(
+            Icons.skip_next,
+            color: playlist.activeIndex < listSize - 1 ? Colors.white : Colors.grey,
+            size: 35.0,
+          ),
+          onPressed: () {
+            if (playlist.activeIndex < listSize - 1) {
+              playlist.next();
+            }
+          });
+    });
   }
 }
