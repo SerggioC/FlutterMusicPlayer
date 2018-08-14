@@ -109,12 +109,12 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
 
             // VISUALIZER SECTION
-            Container(
+            new Container(
                 width: double.infinity,
                 height: 125.0,
                 child: new Visualizer(
                   builder: (BuildContext context, List<int> fft) {
-                    return CustomPaint(
+                    return new CustomPaint(
                       painter: new VisualizerPainter(
                         fft: fft,
                         height: 125.0,
@@ -262,15 +262,15 @@ class VisualizerPainter extends CustomPainter {
           ..style = PaintingStyle.fill;
 
   final Paint lowWavePaint = new Paint()
-    ..color = darkAccentColor
+    ..color = darkAccentColor.withOpacity(0.5)
     ..style = PaintingStyle.fill;
 
   final Paint medWavePaint = new Paint()
-    ..color = accentColor
+    ..color = accentColor.withOpacity(0.7)
     ..style = PaintingStyle.fill;
 
   final Paint highWavePaint = new Paint()
-    ..color = lightAccentColor
+    ..color = lightAccentColor.withOpacity(0.5)
     ..style = PaintingStyle.fill;
 
 
@@ -280,18 +280,18 @@ class VisualizerPainter extends CustomPainter {
   }
 
   void _renderWaves(Canvas canvas, Size size) {
-    final histogramLow = _createHistogram(fft, 15, 2, ((fft.length) / 4).floor());
+    final histogramLow = _createHistogram(fft, 15, "low", 2, ((fft.length) / 4).floor());
     final histogramMed =
-        _createHistogram(fft, 15, (fft.length / 4).ceil(), (fft.length / 2).floor());
+        _createHistogram(fft, 15, "med", (fft.length / 4).ceil(), (fft.length / 2).floor());
     final histogramHigh =
-        _createHistogram(fft, 15, (fft.length / 2).ceil(), (fft.length * .75).floor());
+        _createHistogram(fft, 15, "high", (fft.length / 2).ceil(), (fft.length * .75).floor());
 
     _renderHistogram(canvas, size, histogramLow, lowWavePaint);
     _renderHistogram(canvas, size, histogramHigh, highWavePaint);
     _renderHistogram(canvas, size, histogramMed, medWavePaint);
   }
 
-  List<int> _createHistogram(List<int> samples, int bucketCount, [int start, int end]) {
+  List<int> _createHistogram(List<int> samples, int bucketCount, String type, [int start, int end]) {
     if (start == end) {
       return const [];
     }
@@ -310,9 +310,9 @@ class VisualizerPainter extends CustomPainter {
     List<int> histogram = new List<int>.filled(bucketCount, 0);
 
     // Add up the frequency amounts for each bucket.
-    for (int i = start; i <= start + actualSampleCount; ++i) {
+    for (int i = start; i <= start + actualSampleCount; i++) {
       // Ignore the imaginary half of each FFT sample
-      if ((i - start) % 2 == 1) {
+      if ((i - start) % 2 == 1) { // ignore odd indexes
         continue;
       }
       int bucketIndex = ((i - start) / samplesPerBucket).floor();
@@ -326,18 +326,15 @@ class VisualizerPainter extends CustomPainter {
 
     // smooth the data for visualization
     for (var i = 0; i < histogram.length; ++i) {
-      histogram[i] = (histogram[i] / (samplesPerBucket * 1.1)).abs().round();
+      histogram[i] = (histogram[i] / (samplesPerBucket * 1.2)).round();
     }
 
-    print("histogram Size = ${histogram.length} $histogram");
-
+    //print("histogram $type Size = ${histogram.length} $histogram");
+    print("Samples $samples");
     return histogram;
   }
 
   void _renderHistogram(Canvas canvas, Size size, List<int> histogram, Paint wavePaint) {
-    if (histogram == null) {
-      return;
-    }
     if (histogram.length == 0) {
       return;
     }
