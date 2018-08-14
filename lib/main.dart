@@ -145,117 +145,14 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class VisualizerPainter extends CustomPainter {
-  final List<int> fft;
-  final double height;
-  final Color color;
-  final Paint wavePaint;
-
-  VisualizerPainter({this.fft, this.height, this.color})
-      : wavePaint = new Paint()
-          ..color = color.withOpacity(0.75)
-          ..style = PaintingStyle.fill;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    _renderWaves(canvas, size);
-  }
-
-  void _renderWaves(Canvas canvas, Size size) {
-    final histogramLow = _createHistogram(fft, 15, 2, ((fft.length) / 4).floor());
-    final histogramHigh =
-        _createHistogram(fft, 15, ((fft.length) / 4).ceil(), (fft.length / 2).floor());
-
-    _renderHistogram(canvas, size, histogramLow);
-    _renderHistogram(canvas, size, histogramHigh);
-  }
-
-  void _renderHistogram(Canvas canvas, Size size, List<int> histogram) {
-    if (histogram.length == 0) {
-      return;
-    }
-
-    final pointsToGraph = histogram.length;
-    final widthPerSample = (size.width / (pointsToGraph - 2)).floor();
-
-    final points = new List<double>.filled(pointsToGraph * 4, 0.0);
-
-    for (int i = 0; i < histogram.length - 1; ++i) {
-      points[i * 4] = (i * widthPerSample).toDouble();
-      points[i * 4 + 1] = size.height - histogram[i].toDouble();
-
-      points[i * 4 + 2] = ((i + 1) * widthPerSample).toDouble();
-      points[i * 4 + 3] = size.height - (histogram[i + 1].toDouble());
-    }
-
-    Path path = new Path();
-    path.moveTo(0.0, size.height);
-    path.lineTo(points[0], points[1]);
-    for (int i = 2; i < points.length - 4; i += 2) {
-      path.cubicTo(points[i - 2] + 10.0, points[i - 1], points[i] - 10.0, points[i + 1], points[i],
-          points[i + 1]);
-    }
-    path.lineTo(size.width, size.height);
-    path.close();
-
-    canvas.drawPath(path, wavePaint);
-  }
-
-  List<int> _createHistogram(List<int> samples, int bucketCount, [int start, int end]) {
-    if (start == end) {
-      return const [];
-    }
-
-    start = start ?? 0;
-    end = end ?? samples.length;
-    final sampleCount = end - start + 1;
-    final samplesPerBucket = (sampleCount / bucketCount).floor();
-    if (samplesPerBucket == 0) {
-      return const [];
-    }
-
-    final actualSampleCount = samplesPerBucket * bucketCount;
-//    final actualSampleCount = sampleCount - (sampleCount % samplesPerBucket);
-//    print("My count= $actualSampleCount1 count2 = $actualSampleCount");
-
-    List<int> histogram = new List<int>.filled(actualSampleCount, 0);
-
-    //frequency amount for each bucket
-    for (int i = start; i <= (start + actualSampleCount); i++) {
-      //ignore imaginary part
-      if ((i - start) % 2 == 1) {
-        continue;
-      }
-
-      int bucketIndex = ((i - start) / samplesPerBucket).floor();
-      histogram[bucketIndex] += samples[i];
-
-      //smooth values
-      for (var i = 0; i < histogram.length; i++) {
-        histogram[i] = (histogram[i] / samplesPerBucket).abs().round();
-      }
-
-      return histogram;
-    }
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) {
-    return true;
-  }
-}
-
 //class VisualizerPainter extends CustomPainter {
 //  final List<int> fft;
 //  final double height;
 //  final Color color;
 //  final Paint wavePaint;
 //
-//  VisualizerPainter({
-//    this.fft,
-//    this.height,
-//    this.color,
-//  }) : wavePaint = new Paint()
+//  VisualizerPainter({this.fft, this.height, this.color})
+//      : wavePaint = new Paint()
 //          ..color = color.withOpacity(0.75)
 //          ..style = PaintingStyle.fill;
 //
@@ -267,13 +164,15 @@ class VisualizerPainter extends CustomPainter {
 //  void _renderWaves(Canvas canvas, Size size) {
 //    final histogramLow = _createHistogram(fft, 15, 2, ((fft.length) / 4).floor());
 //    final histogramHigh =
-//        _createHistogram(fft, 15, (fft.length / 4).ceil(), (fft.length / 2).floor());
+//        _createHistogram(fft, 15, ((fft.length) / 4).ceil(), (fft.length / 2).floor());
 //
 //    _renderHistogram(canvas, size, histogramLow);
 //    _renderHistogram(canvas, size, histogramHigh);
 //  }
 //
 //  void _renderHistogram(Canvas canvas, Size size, List<int> histogram) {
+//
+//
 //    if (histogram.length == 0) {
 //      return;
 //    }
@@ -310,34 +209,36 @@ class VisualizerPainter extends CustomPainter {
 //    }
 //
 //    start = start ?? 0;
-//    end = end ?? samples.length - 1;
+//    end = end ?? samples.length;
 //    final sampleCount = end - start + 1;
-//
 //    final samplesPerBucket = (sampleCount / bucketCount).floor();
 //    if (samplesPerBucket == 0) {
 //      return const [];
 //    }
 //
-//    final actualSampleCount = sampleCount - (sampleCount % samplesPerBucket);
-//    List<int> histogram = new List<int>.filled(bucketCount, 0);
+//    final actualSampleCount = samplesPerBucket * bucketCount;
+////    final actualSampleCount = sampleCount - (sampleCount % samplesPerBucket);
+////    print("My count= $actualSampleCount1 count2 = $actualSampleCount");
 //
-//    // Add up the frequency amounts for each bucket.
-//    for (int i = start; i <= start + actualSampleCount; ++i) {
-//      // Ignore the imaginary half of each FFT sample
+//    List<int> histogram = new List<int>.filled(actualSampleCount, 0);
+//
+//    //frequency amount for each bucket
+//    for (int i = start; i <= (start + actualSampleCount); i++) {
+//      //ignore imaginary part
 //      if ((i - start) % 2 == 1) {
 //        continue;
 //      }
 //
 //      int bucketIndex = ((i - start) / samplesPerBucket).floor();
 //      histogram[bucketIndex] += samples[i];
-//    }
 //
-//    // Massage the data for visualization
-//    for (var i = 0; i < histogram.length; ++i) {
-//      histogram[i] = (histogram[i] / samplesPerBucket).abs().round();
+//      //smooth values
+//      for (var i = 0; i < histogram.length; i++) {
+//        histogram[i] = (histogram[i] / samplesPerBucket).abs().round();
+//      }
+//
+//      return histogram;
 //    }
-//    print(histogram);
-//    return histogram;
 //  }
 //
 //  @override
@@ -345,6 +246,133 @@ class VisualizerPainter extends CustomPainter {
 //    return true;
 //  }
 //}
+
+class VisualizerPainter extends CustomPainter {
+  final List<int> fft;
+  final double height;
+  final Color color;
+  final Paint wavePaint;
+
+  VisualizerPainter({
+    this.fft,
+    this.height,
+    this.color,
+  }) : wavePaint = new Paint()
+          ..color = color.withOpacity(0.75)
+          ..style = PaintingStyle.fill;
+
+  final Paint lowWavePaint = new Paint()
+    ..color = darkAccentColor
+    ..style = PaintingStyle.fill;
+
+  final Paint medWavePaint = new Paint()
+    ..color = accentColor
+    ..style = PaintingStyle.fill;
+
+  final Paint highWavePaint = new Paint()
+    ..color = lightAccentColor
+    ..style = PaintingStyle.fill;
+
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    _renderWaves(canvas, size);
+  }
+
+  void _renderWaves(Canvas canvas, Size size) {
+    final histogramLow = _createHistogram(fft, 15, 2, ((fft.length) / 4).floor());
+    final histogramMed =
+        _createHistogram(fft, 15, (fft.length / 4).ceil(), (fft.length / 2).floor());
+    final histogramHigh =
+        _createHistogram(fft, 15, (fft.length / 2).ceil(), (fft.length * .75).floor());
+
+    _renderHistogram(canvas, size, histogramLow, lowWavePaint);
+    _renderHistogram(canvas, size, histogramHigh, highWavePaint);
+    _renderHistogram(canvas, size, histogramMed, medWavePaint);
+  }
+
+  List<int> _createHistogram(List<int> samples, int bucketCount, [int start, int end]) {
+    if (start == end) {
+      return const [];
+    }
+
+    start = start ?? 0;
+    end = end ?? samples.length - 1;
+    final sampleCount = end - start + 1;
+
+    final samplesPerBucket = (sampleCount / bucketCount).floor();
+    if (samplesPerBucket == 0) {
+      return const [];
+    }
+
+    final actualSampleCount = samplesPerBucket * bucketCount;
+    //final actualSampleCount = sampleCount - (sampleCount % samplesPerBucket);
+    List<int> histogram = new List<int>.filled(bucketCount, 0);
+
+    // Add up the frequency amounts for each bucket.
+    for (int i = start; i <= start + actualSampleCount; ++i) {
+      // Ignore the imaginary half of each FFT sample
+      if ((i - start) % 2 == 1) {
+        continue;
+      }
+      int bucketIndex = ((i - start) / samplesPerBucket).floor();
+      if(bucketIndex >= bucketCount) {
+        print("WTF?? $bucketIndex");
+        bucketIndex--;
+      }
+
+      histogram[bucketIndex] += samples[i];
+    }
+
+    // smooth the data for visualization
+    for (var i = 0; i < histogram.length; ++i) {
+      histogram[i] = (histogram[i] / (samplesPerBucket * 1.1)).abs().round();
+    }
+
+    print("histogram Size = ${histogram.length} $histogram");
+
+    return histogram;
+  }
+
+  void _renderHistogram(Canvas canvas, Size size, List<int> histogram, Paint wavePaint) {
+    if (histogram == null) {
+      return;
+    }
+    if (histogram.length == 0) {
+      return;
+    }
+
+    final pointsToGraph = histogram.length;
+    final widthPerSample = (size.width / (pointsToGraph - 2)).floor();
+
+    final points = new List<double>.filled(pointsToGraph * 4, 0.0);
+
+    for (int i = 0; i < histogram.length - 1; ++i) {
+      points[i * 4] = (i * widthPerSample).toDouble();
+      points[i * 4 + 1] = size.height - histogram[i].toDouble();
+
+      points[i * 4 + 2] = ((i + 1) * widthPerSample).toDouble();
+      points[i * 4 + 3] = size.height - (histogram[i + 1].toDouble());
+    }
+
+    Path path = new Path();
+    path.moveTo(0.0, size.height);
+    path.lineTo(points[0], points[1]);
+    for (int i = 2; i < points.length - 4; i += 2) {
+      path.cubicTo(points[i - 2] + 10.0, points[i - 1], points[i] - 10.0, points[i + 1], points[i],
+          points[i + 1]);
+    }
+    path.lineTo(size.width, size.height);
+    path.close();
+
+    canvas.drawPath(path, wavePaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return true;
+  }
+}
 
 class AudioRadialSeekBar extends StatefulWidget {
   final String albumArtUri;
