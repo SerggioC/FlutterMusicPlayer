@@ -4,8 +4,11 @@ A music player made with Fluter.
 Seekbar, progressbar, previous, play pause next buttons and triple waveform visualizer. 
 Sample audio files from SoundCloud.
 
+based on the Flutter Challenge https://github.com/matthew-carroll/flutter_ui_challenge_music_player
+
 Preview
-![device-2018-08-14-040231](https://user-images.githubusercontent.com/21109275/44069504-0ad3fbca-9f77-11e8-810b-ca2c3820f1ab.png)
+![flutter_music_player](https://user-images.githubusercontent.com/21109275/44122972-0ab4502a-a01e-11e8-9ccc-4f4e395d0225.gif)
+
 
 
 ## Getting Started
